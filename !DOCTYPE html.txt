@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>카페 메뉴 취향 추천 - MenuMatch</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6F4E37;
+            --secondary: #A0826D;
+            --accent: #D4A574;
+            --light-bg: #F5F1ED;
+            --dark-text: #2C2C2C;
+            --border-color: #E0D5CC;
+            --success: #4CAF50;
+            --warning: #FF9800;
+            --error: #F44336;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background-color: #fff;
+            color: var(--dark-text);
+            overflow-x: hidden;
+        }
+
+        /* 전체 컨테이너 */
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background: white;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 페이지 숨기기/보이기 */
+        .page {
+            display: none;
+            min-height: 100vh;
+            padding-bottom: 80px;
+        }
+
+        .page.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 헤더 */
+        .header {
+            background: var(--primary);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .header p {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        /* 메인 콘텐츠 */
+        .content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        /* 버튼 스타일 */
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5c4230;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(111, 78, 55, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #c29460;
+            transform: translateY(-2px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-outline:hover {
+            background: var(--light-bg);
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+
+        .btn-block {
+            width: 100%;
+            margin-bottom: 12px;
+        }
+
+        /* 입력 필드 */
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: var(--dark-text);
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="number"]:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(111, 78, 55, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        /* 카드 */
+        .card {
+            background: var(--light-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .card h3 {
+            margin-bottom: 8px;
+            color: var(--primary);
+            font-size: 16px;
+        }
+
+        .card p {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        /* 슬라이더 */
+        .slider-container {
+            margin-bottom: 20px;
+        }
+
+        .slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--border-color);
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .slider-value {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            font-size: 13px;
+        }
+
+        /* 체크박스 그룹 */
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 8px 12px;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .checkbox-label:hover {
+            border-color: var(--primary);
+            background: var(--light-bg);
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        .checkbox-label span {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        /* 라디오 버튼 */
+        .radio-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .radio-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 10px 12px;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .radio-label:hover {
+            border-color: var(--primary);
+        }
+
+        .radio-label input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        .radio-label span {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        /* 홈 화면 */
+        .home-hero {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .home-icon {
+            font-size: 60px;
+            margin-bottom: 16px;
+        }
+
+        .home-hero h2 {
+            font-size: 28px;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        .home-hero p {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+
+        .features {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .feature-item {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .feature-icon {
+            font-size: 24px;
+            min-width: 30px;
+        }
+
+        .feature-text h4 {
+            font-size: 14px;
+            margin-bottom: 2px;
+            color: var(--primary);
+        }
+
+        .feature-text p {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* 매장 카드 */
+        .store-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .store-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .store-card.selected {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .store-card.selected p {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .store-logo {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        /* 메뉴 추천 카드 */
+        .menu-card {
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .menu-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(111, 78, 55, 0.15);
+        }
+
+        .menu-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .menu-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .menu-rating {
+            font-size: 14px;
+            color: var(--warning);
+            font-weight: 600;
+        }
+
+        .menu-price {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .menu-description {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+
+        .menu-reason {
+            background: var(--light-bg);
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: var(--dark-text);
+            border-left: 3px solid var(--primary);
+        }
+
+        .reason-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--primary);
+        }
+
+        /* 순위 배지 */
+        .rank-badge {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 12px;
+        }
+
+        /* 별 평가 */
+        .star-rating {
+            display: flex;
+            gap: 4px;
+            font-size: 18px;
+        }
+
+        .star {
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .star.filled {
+            color: var(--warning);
+        }
+
+        .star.empty {
+            color: #ddd;
+        }
+
+        /* 네비게이션 바 */
+        .navbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0;
+            box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px;
+            cursor: pointer;
+            color: #999;
+            text-decoration: none;
+            font-size: 24px;
+            transition: color 0.3s;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-label {
+            font-size: 10px;
+            color: inherit;
+        }
+
+        /* 모달 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 400px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--primary);
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 8px;
+            margin-top: 24px;
+        }
+
+        .modal-footer .btn {
+            flex: 1;
+        }
+
+        /* 알림 */
+        .alert {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 13px;
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
+
+        .alert-success {
+            background: #E8F5E9;
+            color: #2E7D32;
+            border: 1px solid #A5D6A7;
+        }
+
+        .alert-info {
+            background: #E3F2FD;
+            color: #1565C0;
+            border: 1px solid #90CAF9;
+        }
+
+        .alert-warning {
+            background: #FFF3E0;
+            color: #E65100;
+            border: 1px solid #FFB74D;
+        }
+
+        /* 진행률 바 */
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: var(--border-color);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            transition: width 0.3s ease;
+        }
+
+        /* 탭 */
+        .tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 16px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            font-size: 13px;
+            font-weight: 600;
+            color: #999;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* 비어있는 상태 */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .empty-state h3 {
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: var(--dark-text);
+        }
+
+        .empty-state p {
+            font-size: 13px;
+        }
+
+        /* 검색창 */
+        .search-container {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .search-container input {
+            padding-left: 36px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: 18px;
+        }
+
+        /* 리뷰 아이템 */
+        .review-item {
+            background: var(--light-bg);
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .review-author {
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--primary);
+        }
+
+        .review-date {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .review-text {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        /* 로딩 스피너 */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* 반응형 */
+        @media (max-width: 480px) {
+            .container {
+                max-width: 100%;
+                box-shadow: none;
+            }
+
+            .header {
+                padding: 16px;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+
+            .content {
+                padding: 16px;
+            }
+
+            .checkbox-group,
+            .radio-group {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 프린트 제외 */
+        @media print {
+            .navbar,
+            .btn {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 홈 페이지 -->
+        <div class="page active" id="homePage">
+            <div class="header">
+                <h1>☕ MenuMatch</h1>
+                <p>당신의 취향에 맞는 카페 메뉴 추천</p>
+            </div>
+            <div class="content">
+                <div class="home-hero">
+                    <div class="home-icon">☕</div>
+                    <h2>어떤 메뉴를<br>드실래요?</h2>
+                    <p>당신의 취향을 학습한 MenuMatch가<br>최고의 메뉴를 추천해드립니다.</p>
+                </div>
+
+                <div class="features">
+                    <div class="feature-item">
+                        <div class="feature-icon">🎯</div>
+                        <div class="feature-text">
+                            <h4>취향 프로필</h4>
+                            <p>단맛, 온도, 베이스 등 설정</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">🏪</div>
+                        <div class="feature-text">
+                            <h4>매장 검색</h4>
+                            <p>스타벅스, 이디야 등 검색</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">⭐</div>
+                        <div class="feature-text">
+                            <h4>맞춤 추천</h4>
+                            <p>당신의 메뉴 추천받기</p>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary btn-block" onclick="app.navigateTo('profileSetup')">
+                    시작하기
+                </button>
+                <button class="btn btn-outline btn-block" onclick="app.navigateTo('storeSearch')">
+                    매장 검색하기
+                </button>
+            </div>
+        </div>
+
+        <!-- 취향 프로필 설정 페이지 -->
+        <div class="page" id="profileSetupPage">
+            <div class="header">
+                <h1>취향 프로필 설정</h1>
+                <p>당신을 알아보겠습니다</p>
+            </div>
+            <div class="content">
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 0%"></div>
+                </div>
+
+                <div class="input-group">
+                    <label>이름</label>
+                    <input type="text" id="profileName" placeholder="당신의 이름을 입력하세요">
+                </div>
+
+                <div class="input-group">
+                    <label>단맛 정도</label>
+                    <div class="slider-container">
+                        <input type="range" min="0" max="100" value="50" class="slider" id="sweetnessSlider" oninput="updateSliderValue('sweetness')">
+                        <div class="slider-value">
+                            <span>덜 단맛</span>
+                            <span id="sweetnessValue">50</span>
+                            <span>매우 단맛</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>선호 온도</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="temperature" value="hot" checked>
+                            <span>☕ Hot</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="temperature" value="cold">
+                            <span>🧊 Cold</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>선호 베이스</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="base" value="coffee" checked>
+                            <span>커피</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="base" value="tea">
+                            <span>차</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="base" value="milk">
+                            <span>우유</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="base" value="juice">
+                            <span>주스</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>선호 질감</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="texture" value="smooth" checked>
+                            <span>부드러운</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="texture" value="thick">
+                            <span>진한</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="texture" value="light">
+                            <span>가벼운</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="texture" value="bubbly">
+                            <span>톡톡한</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>기피 재료</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="avoidIngredients" value="dairy">
+                            <span>유제품</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="avoidIngredients" value="nut">
+                            <span>견과류</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="avoidIngredients" value="caffeine">
+                            <span>카페인</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="avoidIngredients" value="sugar">
+                            <span>설탕</span>
+                        </label>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary btn-block" onclick="app.saveProfile()">
+                    프로필 저장하고 계속
+                </button>
+            </div>
+        </div>
+
+        <!-- 매장 검색 페이지 -->
+        <div class="page" id="storeSearchPage">
+            <div class="header">
+                <h1>매장 검색</h1>
+                <p>추천받을 카페를 선택하세요</p>
+            </div>
+            <div class="content">
+                <div class="search-container">
+                    <div class="search-icon">🔍</div>
+                    <input type="text" id="storeSearch" placeholder="매장명 검색..." oninput="app.filterStores()">
+                </div>
+
+                <div id="storesContainer"></div>
+
+                <button class="btn btn-primary btn-block" onclick="app.navigateTo('home')" style="display: none;">
+                    홈으로
+                </button>
+            </div>
+        </div>
+
+        <!-- 메뉴 추천 페이지 -->
+        <div class="page" id="recommendationPage">
+            <div class="header">
+                <h1 id="recommendationTitle">메뉴 추천</h1>
+                <p id="recommendationSubtitle"></p>
+            </div>
+            <div class="content">
+                <div id="recommendationsContainer"></div>
+
+                <button class="btn btn-secondary btn-block" onclick="app.openReviewModal()">
+                    리뷰 작성하기
+                </button>
+                <button class="btn btn-outline btn-block" onclick="app.navigateTo('storeSearch')">
+                    다른 매장 보기
+                </button>
+            </div>
+        </div>
+
+        <!-- 리뷰 작성 페이지 -->
+        <div class="page" id="reviewPage">
+            <div class="header">
+                <h1>리뷰 작성</h1>
+                <p>메뉴를 드셨나요?</p>
+            </div>
+            <div class="content">
+                <div class="card">
+                    <div class="store-logo" id="reviewStoreIcon"></div>
+                    <h3 id="reviewStoreName"></h3>
+                    <p id="reviewMenuName"></p>
+                </div>
+
+                <div class="input-group">
+                    <label>평점</label>
+                    <div class="star-rating" id="starRating"></div>
+                </div>
+
+                <div class="input-group">
+                    <label>리뷰 내용</label>
+                    <textarea id="reviewText" placeholder="이 메뉴는 어떠셨나요?"></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label>이 메뉴의 단맛 정도</label>
+                    <div class="slider-container">
+                        <input type="range" min="0" max="100" value="50" class="slider" id="reviewSweetness">
+                        <div class="slider-value">
+                            <span>덜 단맛</span>
+                            <span id="reviewSweetnessValue">50</span>
+                            <span>매우 단맛</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary btn-block" onclick="app.submitReview()">
+                    리뷰 제출하기
+                </button>
+                <button class="btn btn-outline btn-block" onclick="app.navigateTo('recommendation')">
+                    취소
+                </button>
+            </div>
+        </div>
+
+        <!-- 네비게이션 바 -->
+        <div class="navbar">
+            <a class="nav-item active" onclick="app.navigateTo('home')">
+                <div>🏠</div>
+                <div class="nav-label">홈</div>
+            </a>
+            <a class="nav-item" onclick="app.navigateTo('storeSearch')">
+                <div>🔍</div>
+                <div class="nav-label">검색</div>
+            </a>
+            <a class="nav-item" onclick="app.navigateTo('profileSetup')">
+                <div>👤</div>
+                <div class="nav-label">프로필</div>
+            </a>
+            <a class="nav-item" onclick="app.showMyReviews()">
+                <div>⭐</div>
+                <div class="nav-label">리뷰</div>
+            </a>
+        </div>
+    </div>
+
+    <!-- 리뷰 모달 -->
+    <div class="modal" id="reviewsModal">
+        <div class="modal-content">
+            <div class="modal-header">내 리뷰</div>
+            <div id="myReviewsContainer"></div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="app.closeReviewModal()">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 애플리케이션 상태
+        const app = {
+            currentProfile: null,
+            currentStore: null,
+            currentRecommendations: [],
+            currentMenuIndex: null,
+            reviews: [],
+            selectedRating: 0,
+
+            // 초기화
+            init() {
+                this.loadData();
+                this.setupEventListeners();
+                this.renderStores();
+            },
+
+            // 데이터 로드
+            loadData() {
+                const profile = localStorage.getItem('userProfile');
+                const reviews = localStorage.getItem('userReviews');
+                
+                if (profile) {
+                    this.currentProfile = JSON.parse(profile);
+                }
+                
+                if (reviews) {
+                    this.reviews = JSON.parse(reviews);
+                }
+            },
+
+            // 데이터 저장
+            saveData() {
+                if (this.currentProfile) {
+                    localStorage.setItem('userProfile', JSON.stringify(this.currentProfile));
+                }
+                localStorage.setItem('userReviews', JSON.stringify(this.reviews));
+            },
+
+            // 페이지 네비게이션
+            navigateTo(pageId) {
+                // 모든 페이지 숨기기
+                document.querySelectorAll('.page').forEach(page => {
+                    page.classList.remove('active');
+                });
+
+                // 해당 페이지 보이기
+                const page = document.getElementById(pageId + 'Page');
+                if (page) {
+                    page.classList.add('active');
+                }
+
+                // 네비게이션 바 업데이트
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                
+                const navItem = document.querySelector(`[onclick="app.navigateTo('${pageId}')"]`);
+                if (navItem) {
+                    navItem.classList.add('active');
+                }
+            },
+
+            // 이벤트 리스너 설정
+            setupEventListeners() {
+                // 별점 이벤트
+                this.renderStarRating();
+
+                // 슬라이더 이벤트
+                const reviewSweetnessSlider = document.getElementById('reviewSweetness');
+                if (reviewSweetnessSlider) {
+                    reviewSweetnessSlider.addEventListener('input', () => {
+                        document.getElementById('reviewSweetnessValue').textContent = reviewSweetnessSlider.value;
+                    });
+                }
+            },
+
+            // 프로필 저장
+            saveProfile() {
+                const name = document.getElementById('profileName').value.trim();
+                
+                if (!name) {
+                    alert('이름을 입력해주세요.');
+                    return;
+                }
+
+                const sweetness = document.getElementById('sweetnessSlider').value;
+                const temperature = document.querySelector('input[name="temperature"]:checked').value;
+                const bases = Array.from(document.querySelectorAll('input[name="base"]:checked')).map(el => el.value);
+                const textures = Array.from(document.querySelectorAll('input[name="texture"]:checked')).map(el => el.value);
+                const avoidIngredients = Array.from(document.querySelectorAll('input[name="avoidIngredients"]:checked')).map(el => el.value);
+
+                this.currentProfile = {
+                    name,
+                    sweetness: parseInt(sweetness),
+                    temperature,
+                    bases,
+                    textures,
+                    avoidIngredients,
+                    createdAt: new Date().toISOString()
+                };
+
+                this.saveData();
+                alert(`${name}님의 취향 프로필이 저장되었습니다! 🎉`);
+                this.navigateTo('storeSearch');
+            },
+
+            // 매장 데이터
+            getStores() {
+                return [
+                    {
+                        id: 1,
+                        name: '스타벅스',
+                        icon: '☕',
+                        description: '프리미엄 커피의 대명사',
+                        menus: [
+                            { name: '카라멜 마키아토', price: 5500, sweetness: 65, temperature: 'both', description: '부드러운 카라멜 향' },
+                            { name: '아메리카노', price: 4500, sweetness: 20, temperature: 'both', description: '강렬한 에스프레소의 맛' },
+                            { name: '화이트 초콜릿 모카', price: 6000, sweetness: 75, temperature: 'hot', description: '달콤한 화이트 초콜릿' },
+                            { name: '콜드 브루', price: 5000, sweetness: 15, temperature: 'cold', description: '차가운 커피의 진한 맛' },
+                            { name: '그린티 라떼', price: 5500, sweetness: 60, temperature: 'hot', description: '상큼한 녹차의 향' }
+                        ]
+                    },
+                    {
+                        id: 2,
+                        name: '이디야',
+                        icon: '🥤',
+                        description: '한국형 프리미엄 커피',
+                        menus: [
+                            { name: '돌체 라떼', price: 5000, sweetness: 70, temperature: 'both', description: '부드러운 카라멜 노트' },
+                            { name: '에스프레소', price: 3000, sweetness: 10, temperature: 'hot', description: '선명한 맛의 에스프레소' },
+                            { name: '초콜릿 라떼', price: 5500, sweetness: 80, temperature: 'both', description: '진한 초콜릿 향' },
+                            { name: '딸기 요거트 스무디', price: 6500, sweetness: 75, temperature: 'cold', description: '상큼한 딸기의 맛' },
+                            { name: '카모마일 차', price: 4500, sweetness: 30, temperature: 'hot', description: '편안한 허브향' }
+                        ]
+                    },
+                    {
+                        id: 3,
+                        name: '메가커피',
+                        icon: '☕',
+                        description: '가성비 좋은 커피전문점',
+                        menus: [
+                            { name: '아메리카노', price: 2500, sweetness: 15, temperature: 'both', description: '저렴한 가격의 품질 커피' },
+                            { name: '바닐라 라떼', price: 3500, sweetness: 60, temperature: 'both', description: '부드러운 바닐라 향' },
+                            { name: '초콜릿 드링크', price: 4000, sweetness: 85, temperature: 'both', description: '달콤한 초콜릿' },
+                            { name: '아이스 아메리카노', price: 2500, sweetness: 10, temperature: 'cold', description: '상큼한 맛의 아이스 커피' },
+                            { name: '딸기 에이드', price: 4500, sweetness: 70, temperature: 'cold', description: '신맛과 단맛의 조화' }
+                        ]
+                    },
+                    {
+                        id: 4,
+                        name: '토토로',
+                        icon: '🍵',
+                        description: '프리미엄 티 카페',
+                        menus: [
+                            { name: '유자 차', price: 6000, sweetness: 50, temperature: 'hot', description: '상큼한 유자의 향' },
+                            { name: '버터 밀크티', price: 6500, sweetness: 70, temperature: 'hot', description: '버터향의 밀크티' },
+                            { name: '녹차 라떼', price: 6000, sweetness: 55, temperature: 'both', description: '은은한 녹차 향' },
+                            { name: '블루베리 에이드', price: 6500, sweetness: 65, temperature: 'cold', description: '새콤달콤한 블루베리' },
+                            { name: '초콜릿 밀크티', price: 6500, sweetness: 80, temperature: 'hot', description: '진한 초콜릿과 차의 조화' }
+                        ]
+                    },
+                    {
+                        id: 5,
+                        name: '컴포즈커피',
+                        icon: '☕',
+                        description: '감성적인 커피하우스',
+                        menus: [
+                            { name: '에스프레소 마키아토', price: 5000, sweetness: 30, temperature: 'hot', description: '진한 에스프레소의 맛' },
+                            { name: '카페라떼', price: 5000, sweetness: 40, temperature: 'both', description: '부드러운 우유의 맛' },
+                            { name: '비엔나 커피', price: 6000, sweetness: 65, temperature: 'hot', description: '휘핑크림과 커피의 조화' },
+                            { name: '아이스 카페라떼', price: 5000, sweetness: 35, temperature: 'cold', description: '시원한 커피 우유' },
+                            { name: '오렌지 에이드', price: 6000, sweetness: 60, temperature: 'cold', description: '상큼한 오렌지' }
+                        ]
+                    }
+                ];
+            },
+
+            // 매장 렌더링
+            renderStores() {
+                const container = document.getElementById('storesContainer');
+                const stores = this.getStores();
+
+                container.innerHTML = stores.map(store => `
+                    <div class="card store-card" onclick="app.selectStore(${store.id})">
+                        <div class="store-logo">${store.icon}</div>
+                        <h3>${store.name}</h3>
+                        <p>${store.description}</p>
+                    </div>
+                `).join('');
+            },
+
+            // 매장 필터링
+            filterStores() {
+                const searchTerm = document.getElementById('storeSearch').value.toLowerCase();
+                const stores = this.getStores();
+                const filtered = stores.filter(store => 
+                    store.name.toLowerCase().includes(searchTerm) ||
+                    store.description.toLowerCase().includes(searchTerm)
+                );
+
+                const container = document.getElementById('storesContainer');
+                
+                if (filtered.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🔍</div>
+                            <h3>검색 결과 없음</h3>
+                            <p>다른 매장명으로 검색해보세요</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = filtered.map(store => `
+                    <div class="card store-card" onclick="app.selectStore(${store.id})">
+                        <div class="store-logo">${store.icon}</div>
+                        <h3>${store.name}</h3>
+                        <p>${store.description}</p>
+                    </div>
+                `).join('');
+            },
+
+            // 매장 선택
+            selectStore(storeId) {
+                const stores = this.getStores();
+                this.currentStore = stores.find(s => s.id === storeId);
+                
+                if (!this.currentProfile) {
+                    alert('먼저 취향 프로필을 설정해주세요.');
+                    this.navigateTo('profileSetup');
+                    return;
+                }
+
+                this.generateRecommendations();
+                this.navigateTo('recommendation');
+            },
+
+            // 메뉴 추천 생성
+            generateRecommendations() {
+                const menus = this.currentStore.menus;
+                const profile = this.currentProfile;
+
+                // 각 메뉴별 점수 계산
+                const scored = menus.map(menu => {
+                    let score = 100;
+
+                    // 단맛 점수 (프로필의 선호도와 차이)
+                    const sweetnessDiff = Math.abs(menu.sweetness - profile.sweetness);
+                    score -= sweetnessDiff * 0.5;
+
+                    // 온도 점수
+                    if (menu.temperature !== 'both' && menu.temperature !== profile.temperature) {
+                        score -= 20;
+                    }
+
+                    // 기피 재료 점수
+                    if (profile.avoidIngredients.includes('dairy') && menu.name.includes('라떼')) {
+                        score -= 30;
+                    }
+                    if (profile.avoidIngredients.includes('caffeine') && (menu.name.includes('커피') || menu.name.includes('에스프레소'))) {
+                        score -= 30;
+                    }
+
+                    // 리뷰 데이터 활용
+                    const relatedReviews = this.reviews.filter(r => r.menuName === menu.name);
+                    if (relatedReviews.length > 0) {
+                        const avgRating = relatedReviews.reduce((sum, r) => sum + r.rating, 0) / relatedReviews.length;
+                        score += (avgRating - 2.5) * 10;
+                    }
+
+                    return { ...menu, score };
+                });
+
+                // 점수 내림차순 정렬 후 상위 5개 선택
+                this.currentRecommendations = scored
+                    .sort((a, b) => b.score - a.score)
+                    .slice(0, 5);
+
+                this.renderRecommendations();
+            },
+
+            // 추천 메뉴 렌더링
+            renderRecommendations() {
+                const container = document.getElementById('recommendationsContainer');
+                const title = document.getElementById('recommendationTitle');
+                const subtitle = document.getElementById('recommendationSubtitle');
+
+                title.textContent = `${this.currentStore.name} 추천 메뉴`;
+                subtitle.textContent = `${this.currentProfile.name}님을 위한 추천입니다`;
+
+                container.innerHTML = this.currentRecommendations.map((menu, index) => {
+                    const reason = this.getRecommendationReason(menu);
+                    return `
+                        <div class="menu-card">
+                            <div class="menu-header">
+                                <div>
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                        <span class="rank-badge">${index + 1}</span>
+                                        <span class="menu-title">${menu.name}</span>
+                                    </div>
+                                    <div class="menu-price">${menu.price.toLocaleString()}원</div>
+                                </div>
+                                <div class="menu-rating">${(menu.score / 20).toFixed(1)}/5</div>
+                            </div>
+                            <div class="menu-description">${menu.description}</div>
+                            <div class="menu-reason">
+                                <div class="reason-title">추천 이유</div>
+                                <div>${reason}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            },
+
+            // 추천 이유 생성
+            getRecommendationReason(menu) {
+                const profile = this.currentProfile;
+                const reasons = [];
+
+                // 단맛 비교
+                const sweetnessDiff = Math.abs(menu.sweetness - profile.sweetness);
+                if (sweetnessDiff < 20) {
+                    reasons.push('당신의 선호 단맛과 완벽하게 맞아요');
+                } else if (menu.sweetness < profile.sweetness) {
+                    reasons.push('당신이 원하는 것보다 덜 달아요');
+                } else {
+                    reasons.push('당신이 원하는 것보다 더 달아요');
+                }
+
+                // 온도
+                if (menu.temperature === 'both') {
+                    reasons.push(`${profile.temperature === 'hot' ? '따뜻한' : '차가운'} 온도로 즐길 수 있어요`);
+                } else {
+                    reasons.push(`${menu.temperature === 'hot' ? '따뜻한' : '차가운'} 음료예요`);
+                }
+
+                return reasons[Math.floor(Math.random() * reasons.length)];
+            },
+
+            // 리뷰 모달 열기
+            openReviewModal() {
+                this.currentMenuIndex = 0;
+                this.selectedRating = 0;
+                this.updateReviewForm();
+                this.navigateTo('review');
+            },
+
+            // 리뷰 양식 업데이트
+            updateReviewForm() {
+                const menu = this.currentRecommendations[this.currentMenuIndex];
+                
+                document.getElementById('reviewStoreIcon').textContent = this.currentStore.icon;
+                document.getElementById('reviewStoreName').textContent = this.currentStore.name;
+                document.getElementById('reviewMenuName').textContent = menu.name;
+                document.getElementById('reviewText').value = '';
+                document.getElementById('reviewSweetness').value = 50;
+                document.getElementById('reviewSweetnessValue').textContent = '50';
+                
+                // 별점 초기화
+                this.selectedRating = 0;
+                this.renderStarRating();
+            },
+
+            // 별점 렌더링
+            renderStarRating() {
+                const container = document.getElementById('starRating');
+                if (!container) return;
+
+                const stars = Array(5).fill(0).map((_, i) => i);
+                container.innerHTML = stars.map(i => `
+                    <span class="star ${i < this.selectedRating ? 'filled' : 'empty'}" 
+                          onclick="app.setRating(${i + 1})">⭐</span>
+                `).join('');
+            },
+
+            // 별점 설정
+            setRating(rating) {
+                this.selectedRating = rating;
+                this.renderStarRating();
+            },
+
+            // 리뷰 제출
+            submitReview() {
+                if (this.selectedRating === 0) {
+                    alert('별점을 선택해주세요.');
+                    return;
+                }
+
+                const reviewText = document.getElementById('reviewText').value.trim();
+                if (!reviewText) {
+                    alert('리뷰 내용을 입력해주세요.');
+                    return;
+                }
+
+                const menu = this.currentRecommendations[this.currentMenuIndex];
+                const sweetnessRating = parseInt(document.getElementById('reviewSweetness').value);
+
+                const review = {
+                    id: Date.now(),
+                    storeName: this.currentStore.name,
+                    menuName: menu.name,
+                    rating: this.selectedRating,
+                    text: reviewText,
+                    sweetnessRating,
+                    createdAt: new Date().toISOString()
+                };
+
+                this.reviews.push(review);
+                this.saveData();
+
+                // 프로필 업데이트
+                if (this.currentProfile) {
+                    const avgSweetness = Math.round((this.currentProfile.sweetness + sweetnessRating) / 2);
+                    this.currentProfile.sweetness = avgSweetness;
+                    this.saveData();
+                }
+
+                alert('리뷰가 저장되었습니다! 🙏');
+                this.navigateTo('recommendation');
+            },
+
+            // 리뷰 보기 모달 열기
+            openReviewModal() {
+                document.getElementById('reviewsModal').classList.add('active');
+                this.showMyReviews();
+            },
+
+            // 리뷰 모달 닫기
+            closeReviewModal() {
+                document.getElementById('reviewsModal').classList.remove('active');
+            },
+
+            // 내 리뷰 보기
+            showMyReviews() {
+                const container = document.getElementById('myReviewsContainer');
+
+                if (this.reviews.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📝</div>
+                            <h3>작성한 리뷰가 없습니다</h3>
+                            <p>메뉴를 드신 후 리뷰를 작성해보세요</p>
+                        </div>
+                    `;
+                    document.getElementById('reviewsModal').classList.add('active');
+                    return;
+                }
+
+                container.innerHTML = this.reviews
+                    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                    .map(review => {
+                        const date = new Date(review.createdAt).toLocaleDateString('ko-KR');
+                        const stars = '⭐'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+                        return `
+                            <div class="review-item">
+                                <div class="review-header">
+                                    <div>
+                                        <div class="review-author">${review.storeName} - ${review.menuName}</div>
+                                        <div class="review-date">${date}</div>
+                                    </div>
+                                    <div>${stars}</div>
+                                </div>
+                                <div class="review-text">${review.text}</div>
+                            </div>
+                        `;
+                    }).join('');
+
+                document.getElementById('reviewsModal').classList.add('active');
+            }
+        };
+
+        // 슬라이더 값 업데이트
+        function updateSliderValue(type) {
+            if (type === 'sweetness') {
+                const value = document.getElementById('sweetnessSlider').value;
+                document.getElementById('sweetnessValue').textContent = value;
+            }
+        }
+
+        // 앱 초기화
+        window.addEventListener('load', () => {
+            app.init();
+        });
+
+        // 모달 닫기 (외부 클릭)
+        document.addEventListener('click', (e) => {
+            const modal = document.getElementById('reviewsModal');
+            if (e.target === modal) {
+                app.closeReviewModal();
+            }
+        });
+    </script>
+</body>
+</html>
